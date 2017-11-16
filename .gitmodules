@@ -1,0 +1,3 @@
+[submodule "Adapter1/LegacyNetAdapter"]
+	path = Adapter1/LegacyNetAdapter
+	url = https://github.com/fsackur/LegacyNetAdapter
