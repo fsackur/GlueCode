@@ -20,13 +20,17 @@ if ($SpinUpMore) {
 
 
 
-This is what you should not do. This has a large and ragged surface area. It’s deeply coupled to both APIs, it’s hard to break down into testable chunks, and it’s hard to reuse if you want to also spin up more instances when an advertising campaign kicks off.
+This is what you should not do. This has a large and ragged surface area. 
+ - It’s deeply coupled to both APIs
+ - it’s hard to break down into testable chunks
+ - it’s hard to reuse if you want to also, say, spin up more instances when an advertising campaign kicks off.
+ - the field names won't match in the APIs you’re using, so you are going to have variable names that don't make sense in the entire context
 
 I advocate that there’s little extra time involved in making wrapper code for each API that exposes the functionality you need. Then your glue code will interface the two pieces of wrapper code together.
 
 That keeps your business logic separate to your implementation details.
 
-You won’t find that the field names match in the APIs you’re using, so this is your opportunity to push all the translation code into the wrapper modules and let your glue code have more internal consistency.
+It will push all the translation code into the wrapper modules and let your glue code have more internal consistency.
 
 This is also your opportunity to let your glue code be completely covered with unit tests, so you don’t have to run full end-to-end tests on every code change.
 
@@ -36,10 +40,12 @@ https://github.com/fsackur/LegacyNetAdapter
 We currently use nvspbind.exe, which wraps the Win32 APIs:
 https://gallery.technet.microsoft.com/Hyper-V-Network-VSP-Bind-cf937850
 
-
-I want to set the network adapter binding order
+The task is to set the network adapter binding order so the "primary" adapter is at the top.
 
 <Demo LegacyNetAdapter, show Guid property>
+This isn't perfect code, but it gives us the GUID property
+Makes sense that the glue code would refer to "AdapterGuid" - makes sense in both contexts
+
 
 <Show sketching out of Invoke-NVSPbind>
 
@@ -61,48 +67,21 @@ Mock out Get-WmiObject and return a custom object that has the mock code you req
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Interface for SetDNSServerSearchOrder method of the Win32_NetworkAdapterConfiguration class:
-https://msdn.microsoft.com/en-us/library/aa393295(v=vs.85).aspx
-
-
-So in this case, you might want glue code that does the following:
-Accepts one or more IP addresses
-Performs some validation (e.g. RFC1918)
-Runs the WMI method
-Returns null
-Throws an exception with the error code
-
-I would start developing like this:
-ISE
-Get the class - start mucking about with code interactively
-stop and write the param block INCLUDING the OutputType. 
-If I’m feeling generous I might also include a section on exceptions in the help block.
-Flesh out the code to meet the spec of the param block
-
-https://github.com/fsackur/LegacyNetAdapter/blob/master/LegacyNetAdapter.psm1#L693
-
-
 An interface in a strongly-typed language is very similar to a class except that you can never create an object out of it. It exists because, when you define a class as implementing an interface, the compiler forces you to back up your promise by implementing all the methods of the interface. In other words, an interface is part of how a strongly-typed language gives you a contract.
 
 Taking a step back from the language-specific meaning of an interface, an interface means the expected parameters and return types of some code
 
+<switch back to Invoke-NVSPbind>
 Powershell is dynamically typed, and does not enforce OutputType. You can make it enforce your param block with the CmdletBinding() attribute, but it won’t enforce the outputtype and it won’t enforce the exception type. Anyone who’s developed C# code knows that IntelliSense won’t stop squiggling red lines until you complete all possible code paths with a return statement of the correct type. PS doesn’t do that. Nonetheless, I advocate that you code as if it does. That’s because it teaches you to think about the state of your objects as they go down code paths.
 
+Exceptions - example common error scenario, menu takes credentials, but only when some lower-level code tries the operation do you find "permission denied"
+The excpetions that code throws in well-known scenraios form part of the contract
+Powershell doesn't support it but other languages let you have "throws" keytword in interface definition
+Won't ever tell you all the exceptions! You could always get an "Out of memory" excpetion
+
 So the ideal output of this little coding exercise is something that completely maps the input range to the output domain in a one-to-one relationship. If we trust the msdn documentation, we expect our call to SetDNSServerSearchOrder to only ever return one of 39 different states (assuming that you accept “Other” to be a single state defined by any return code between 101 and 4,294,967,295)
+https://msdn.microsoft.com/en-us/library/aa393295(v=vs.85).aspx
+
 
 So, why are we doing this again?
 You work with colleagues, or people in the community
@@ -130,24 +109,18 @@ For my software, all I’m ever going to want to do out of CRUD, is Read and Upd
 So i can start to define the interface that my software is looking for from a CMDB app. And in this case, I’m now working backwards to the typical PS way, and later I’ll be filling in the gap with glue code.
 
 Since my software is composed of multiple modules, this all belongs in the DB module. The DB module defines Import-DeviceInfo and Import-AccountInfo (export may come later)
+    sl C:\dev\GlueCode\Proxy2
+    ise .\DB.psm1
 
-It took me a while to settle on Import, the Approved Verbs page features quite prominently in my browser history because it’s not always a clear-cut choice. But I do know that it’s going to return objects with certain characteristics and, since I’m happy to support only PS5 in version 1, I’ve written PS classes to define that interface.
+(It took me a while to settle on Import as the verb)
 
-I’ve also written my own custom exceptions. These are just PS Classes that extend Exception.
-
-I’m sure that eventually I’ll refactor these into proper C# classes - I say proper, because PS classes are still dynamic objects that can have fields added. Therefore they don’t offer the tightness of interface that I’m looking for. I want to have the concept of type safety - it’s either correct, or it throws an exception and you KNOW that it has blown up.
-
-Defining my own exception classes also means that the code in my project can handle well-understood error conditions with simpler code.
+I’ll probably refactor into C# classes - to support PS4 and below, and because PS classes are still dynamic objects.
 
 All this adds up to an interface that can be matched up to most CMDB apps with glue code, and it makes the glue code testable.
 
-In my employer, the two main CMDB apps have web APIs. One of them is good, the other one has its quirks. We have powershell modules for them both already, but they do not return objects with matching fields. This is the point of the adapter design pattern.
-
-My DB module loads an array of glue code modules. This is hard-coded, but you can imagine that this could be dynamically populated from a plugins folder. One glue module for each CMDB app that we’re coding to. The glue modules expose the same function names and method signatures as the DB module, but include the actual implementation. The glue modules will also expose the regex for the valid unique IDs. We can pick which one we call, ultimately, by getting the regex from each glue module and seeing what our input sticks to, and we can then call the appropriate glue module’s function by fully-qualifying the function name.
-
-To make the glue code testable, we create mocks of the app we’re wrapping that return certain values for valid input, and throw the same exceptions or return the same nulls as the wrapped app in error conditions. Then we can test that our glue code handles errors according to our specs as well as returning correctly under correct conditions.
-
 Once we have this, we’re done; we have abstracted away a layer. I can provide a systems integrator with my app and with minimum effort, he or she should be able to make it work with your database. And the unit tests will show that it’s working. And it will throw exceptions if it is wrong, and the exceptions will be in the appropriate part of the project, so it ought to be easier to debug than if we let incorrect data further into our code.
+
+Now let's see what
 
 There is one fly in the ointment, of course.
 

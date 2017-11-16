@@ -10,7 +10,6 @@ Import-Module $PSScriptRoot\DB.psm1 -Force
 
 
 $Cache = [Cache]::GetInstance()
-[uint16]$Script:RetryCount = 0
 
 
 function Import-DeviceInfo {
@@ -49,11 +48,9 @@ function Import-DeviceInfo {
     [OutputType([DeviceInfo[]])]
     param(
         [Parameter(Mandatory=$true, Position=0, ParameterSetName='Device', ValueFromPipeline=$true)]
-        [ValidatePattern('^\d+$')]
         [DeviceID[]]$Device,
 
         [Parameter(Mandatory=$true, Position=0, ParameterSetName='Account')]
-        [ValidatePattern('^\d+$')]
         [AccountID]$Account
     )
     
@@ -114,7 +111,6 @@ function Import-AccountInfo {
     [OutputType([AccountInfo])]
     param(
         [Parameter(Mandatory=$true, Position=0)]
-        [ValidatePattern('^\d+$')]
         [AccountID]$Account
     )
 

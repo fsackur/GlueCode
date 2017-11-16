@@ -1,5 +1,16 @@
 ﻿Set-Location $PSScriptRoot
 Import-Module .\LegacyNetAdapter
+return
+
+
+
+
+$PrimaryAdapter = Get-WmiAdapter -Primary | Add-AdapterMagic
+
+$PrimaryAdapter.WmiAdapter.GUID
+
+
+
 
 
 .\NVSPbind\nvspbind.exe /?
@@ -10,7 +21,5 @@ Import-Module .\LegacyNetAdapter
 
 
 
-$PrimaryAdapter = Get-WmiAdapter -Primary | Add-AdapterMagic
-
-$PrimaryAdapter.WmiAdapter.GUID
-
+#This is what we will aim for
+Invoke-NVSPbind -MoveToTop -AdapterGuid $PrimaryAdapter.WmiAdapter.GUID

@@ -23,7 +23,12 @@ cls
 
 
 Import-Module .\Monolith.psd1 -Force -ErrorAction Stop
+
+
 function Write-Host {}
+
+
+
 Write-SplashScreen
 Remove-Item Function:\Write-Host
 
@@ -74,6 +79,9 @@ Write-SplashScreen
 Remove-Item Function:\Write-Host
 
 
+#But this is making a global change to Write-Host
+
+
 #endregion 3
 
 
@@ -84,7 +92,12 @@ Remove-Item Function:\Write-Host
 
 
 #region 4
-#Does not achieve the desired result
+
+#Avoid global change. This should still work:
+    Write-Host "Write-Host still works!" -ForegroundColor Magenta
+
+
+#Does not achieve the desired result:
 cls
 
 
@@ -162,6 +175,22 @@ Write-Host "Write-Host still works!" -ForegroundColor Magenta
 
 #endregion 6
 
+
+
+
+
+
+#region Invoke() tangent
+
+& {Write-Output (1..5)}
+
+$SB = {Write-Output (1..5)}
+$SB.Invoke()
+
+$Module = Get-Module Monolith
+$Module.Invoke($SB)
+
+#endregion Invoke() tangent
 
 
 

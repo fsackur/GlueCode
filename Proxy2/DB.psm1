@@ -23,11 +23,9 @@ function Import-DeviceInfo {
     [OutputType([DeviceInfo[]])]
     param(
         [Parameter(Mandatory = $true, Position = 0, ParameterSetName = 'Device')]
-        [ValidatePattern('^\d+$')]
         [DeviceID[]]$Device,
 
         [Parameter(Mandatory = $true, Position = 0, ParameterSetName = 'Account')]
-        [ValidatePattern('^\d+$')]
         [AccountID]$Account
     )
     
@@ -65,6 +63,7 @@ function Import-AccountInfo {
 }
 
 
+#Private - don't export
 function New-MockDeviceInfo {
     param(
         [DeviceID]$Device,

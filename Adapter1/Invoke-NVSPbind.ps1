@@ -14,7 +14,7 @@
 
 [CmdletBinding(DefaultParameterSetName='List')]
 [OutputType(ParameterSetName='List', [PSObject[]])]
-[OutputType(ParameterSetName='List', [void])]
+[OutputType(ParameterSetName='MoveToTop', [void])]
 
 param (
     [Parameter(ParameterSetName='List')]
@@ -23,6 +23,7 @@ param (
     [Parameter(ParameterSetName='MoveToTop')]
     [switch]$MoveToTop,
 
-    [Parameter(ParameterSetName='MoveToTop')]
+    [Parameter(ParameterSetName='MoveToTop', Mandatory=$true)]
     [guid]$AdapterGuid
 )
+
