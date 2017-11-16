@@ -1,7 +1,7 @@
 
 # Preamble
 
-The majority of talks that we have in this group are demonstrations of software products. I’d like to talk about the code that stitches products together.
+The majority of talks that we have in this group are demonstrations of software products. I’d like to talk about the code that stitches products together. Along the way I'm going to expound on my obsession with software contracts.
 
 I have a rough distinction between application code, that is probably in a single repository and may be valuable to different use cases, and glue code, that you write to make applications work in your context. Powershell is a great choice for glue code.
 
@@ -94,7 +94,7 @@ This is all about translation. This is the adapter design pattern (or an approxi
 Design patterns
 https://en.wikipedia.org/wiki/Software_design_pattern
 
-I am working on a pet project that I want to have general applicability to service providers, including my own employer. All these guys will have a configuration management database. At my last firm, we had commercial products called Kaseya and N-able. Both of these are apps that also allow remote access for helpdesk, runbooks, monitoring and a bunch of other stuff. But at the core is a database that holds all the hostnames, IP addresses, OS versions and a bunch of other information about each endpoint under support. Rackspace has a few of these as CMDBs well. Obviously every single CMDB has a different interface! So if I am writing a tool with general applicability, how to handle that?
+I am working on a pet project that I want to have general applicability to service providers, including Rackspace. All these guys will have a configuration management database. At my last firm, we had commercial products called Kaseya and N-able. Both of these are apps that also allow remote access for helpdesk, runbooks, monitoring and a bunch of other stuff. But at the core is a database that holds all the hostnames, IP addresses, OS versions and a bunch of other information about each endpoint under support. Rackspace has a few of these as CMDBs well. Obviously every single CMDB has a different interface! So if I am writing a tool with general applicability, how to handle that?
 
 All of these things will have some information in common.
 
@@ -120,15 +120,28 @@ All this adds up to an interface that can be matched up to most CMDB apps with g
 
 Once we have this, we’re done; we have abstracted away a layer. I can provide a systems integrator with my app and with minimum effort, he or she should be able to make it work with your database. And the unit tests will show that it’s working. And it will throw exceptions if it is wrong, and the exceptions will be in the appropriate part of the project, so it ought to be easier to debug than if we let incorrect data further into our code.
 
-Now let's see what
+Now let's see what we can do given a tightly-defined software contract.
 
-There is one fly in the ointment, of course.
+This hits the API multiple times. It would be nice to use caching. This is a good candidate for a proxy command.
+    ise CacheLayer.psm1
 
-Is there anyone here who has *never* cursed at a colleague’s choice to use Write-Host?
+Exports same functions. Same method signatures. Imports DB.psm1 as a nested module. Within functions, calls DB by module-qualified name
 
+It's transparent to the calling code whether this caching layer is loaded or not. You can disable it. It's a question of dynamically choosing which module to load.
 
+That is the "Proxy" design pattern.
+
+PS is very suited for this design pattern because command resolution is dynamic.
+
+Alias > function > cmdlet
+Local module > global scope
+Can fully-qualify function names
+
+You can use this to override behaviour in a foreign module without having to change the code in that module. Is there anyone here who has *never* cursed at someone else’s choice to use Write-Host?
+
+    sl ..\Proxy1
 Shimming Write-Host into Write-Output
 
 Shimming Write-Verbose to also log
 
-Shimming to add caching
+
