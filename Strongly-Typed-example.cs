@@ -17,9 +17,9 @@ namespace Example
         public string ToString(string formatQualifier) {
             if (formatQualifier == 'Upper') {
                 return this.ID.ToString().ToUpper();
-            } else {
-                return this.ID.ToString().ToLower();
-            }
+            } 
+
+            
         }
     }
 }

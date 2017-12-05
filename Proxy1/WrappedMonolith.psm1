@@ -5,4 +5,4 @@ function Write-Host {
 
 $M = Import-Module .\Monolith.psd1 -PassThru
 
-Export-ModuleMember ([string[]]$M.ExportedFunctions.Keys) -Variable ([string[]]$M.ExportedVariables.Keys)
+#Export-ModuleMember ([string[]]$M.ExportedFunctions.Keys) -Variable ([string[]]$M.ExportedVariables.Keys)
